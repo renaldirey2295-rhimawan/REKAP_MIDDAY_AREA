@@ -305,40 +305,45 @@
     loadDashboard();
   }
   function exportExcel() {
-      const filters = currentFilters();
-  
-      if (!dashboardRows.length) {
-        showError('Tidak ada data untuk diexport. Silakan ubah filter terlebih dahulu.');
-        return;
-      }
-  
-      showError('');
-      setLoading(true);
-  
-      callApi('export', filters)
-        .then(result => {
-          setLoading(false);
-  
-          if (!result || !result.success || !result.downloadUrl) {
-            throw new Error(
-              result && result.error
-                ? result.error
-                : 'File Excel belum berhasil dibuat. Link download tidak ditemukan.'
-            );
-          }
-  
-          // Navigasi pada tab yang sama agar tidak diblokir popup blocker.
-          window.location.href = result.downloadUrl;
-        })
-        .catch(error => {
-          setLoading(false);
-          showError(
-            error && error.message
-              ? error.message
-              : 'Terjadi kesalahan saat export Excel.'
-          );
-        });
+    const filters = currentFilters();
+
+    if (!dashboardRows.length) {
+      showError('Tidak ada data untuk diexport. Silakan ubah filter terlebih dahulu.');
+      return;
     }
+
+    showError('');
+    setLoading(true);
+
+    callApi('export', filters)
+      .then(result => {
+        setLoading(false);
+
+        // Kompatibel dengan backend terbaru (downloadUrl)
+        // dan backend versi sebelumnya (url).
+        const downloadLink = result && (result.downloadUrl || result.url);
+
+        if (!result || result.error || !downloadLink) {
+          throw new Error(
+            result && result.error
+              ? result.error
+              : 'API Export tidak mengirimkan link download. Periksa deployment Apps Script.'
+          );
+        }
+
+        // Buka file Excel pada tab yang sama agar tidak diblokir popup blocker.
+        window.location.href = downloadLink;
+      })
+      .catch(error => {
+        setLoading(false);
+        showError(
+          error && error.message
+            ? error.message
+            : 'Terjadi kesalahan saat export Excel.'
+        );
+      });
+  }
+
   $('searchInput').addEventListener('keydown',e=>{if(e.key==='Enter')loadDashboard();});
   $('storeFilter').addEventListener('change',loadDashboard);
   document.addEventListener('DOMContentLoaded',loadDashboard);
