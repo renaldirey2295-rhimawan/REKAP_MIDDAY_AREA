@@ -136,7 +136,7 @@
 
 <script>
   // GANTI dengan URL Web App Apps Script yang berakhiran /exec
-  const API_URL = 'https://script.google.com/macros/s/AKfycbzl148t4wwiTT9PqJATP0vi4qLaQQyzE39uzf-dPW1dVI6clA2a_qHkVBu0wzvE5E1N/exec';
+  const API_URL = 'TEMPEL_URL_WEB_APP_APPS_SCRIPT_DI_SINI';
 
   let dashboardRows = [];
   let jsonpCounter = 0;
@@ -304,34 +304,41 @@
     $('searchInput').value = '';
     loadDashboard();
   }
-  function exportExcel(){
-    const filters = currentFilters();
-    if(!dashboardRows.length){
-      showError('Tidak ada data untuk diexport. Silakan ubah filter terlebih dahulu.');
-      return;
+  function exportExcel() {
+      const filters = currentFilters();
+  
+      if (!dashboardRows.length) {
+        showError('Tidak ada data untuk diexport. Silakan ubah filter terlebih dahulu.');
+        return;
+      }
+  
+      showError('');
+      setLoading(true);
+  
+      callApi('export', filters)
+        .then(result => {
+          setLoading(false);
+  
+          if (!result || !result.success || !result.downloadUrl) {
+            throw new Error(
+              result && result.error
+                ? result.error
+                : 'File Excel belum berhasil dibuat. Link download tidak ditemukan.'
+            );
+          }
+  
+          // Navigasi pada tab yang sama agar tidak diblokir popup blocker.
+          window.location.href = result.downloadUrl;
+        })
+        .catch(error => {
+          setLoading(false);
+          showError(
+            error && error.message
+              ? error.message
+              : 'Terjadi kesalahan saat export Excel.'
+          );
+        });
     }
-    showError('');
-    setLoading(true);
-    callApi('export', filters)
-      .then(result => {
-        setLoading(false);
-        if (result && result.url) {
-          const link = document.createElement('a');
-          link.href = result.url;
-          link.target = '_blank';
-          link.rel = 'noopener';
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-        } else {
-          showError('File Excel berhasil diproses tetapi tautan unduhan tidak ditemukan.');
-        }
-      })
-      .catch(err => {
-        setLoading(false);
-        showError(err && err.message ? err.message : String(err));
-      });
-  }
   $('searchInput').addEventListener('keydown',e=>{if(e.key==='Enter')loadDashboard();});
   $('storeFilter').addEventListener('change',loadDashboard);
   document.addEventListener('DOMContentLoaded',loadDashboard);
